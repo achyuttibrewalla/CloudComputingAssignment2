@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+			Chatbot
+		</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  		<script src="https://code.jquery.com/jquery-3.3.1.min.js"> </script>
+  		<script type="text/javascript" src="assets/aws-sdk.min.js"></script>
+        <script type="text/javascript" src="assets/aws-cognito-sdk.min.js"></script>
+        <script type="text/javascript" src="assets/gateway/apigClient.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/apiGatewayCore/apiGatewayClient.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/apiGatewayCore/sigV4Client.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/apiGatewayCore/simpleHttpClient.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/apiGatewayCore/utils.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/axios/dist/axios.standalone.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/CryptoJS/rollups/hmac-sha256.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/CryptoJS/rollups/sha256.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/CryptoJS/components/enc-base64.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/CryptoJS/components/hmac.js"></script>
+        <script type="text/javascript" src="assets/gateway/lib/url-template/url-template.js"></script>
+	    
+	<style>
+    	body  {
+    	    background-image: url("bg2.png");
+    	    background-color: #cccccc;
+    	}
+
+    	.center {
+    	    margin: auto;
+    	    width: 60%;
+    	}
+
+    	textarea {
+        overflow-y: scroll;
+        height: 100px;
+        resize: none; /* Remove this if you want the user to resize the textarea */
+        width: 600px;
+        height: 120px;
+        border: 3px solid #cccccc;
+        padding: 5px;
+        font-family: Tahoma, sans-serif;
+        background-position: bottom right;
+        background-repeat: no-repeat;
+        }
+
+    	.chatlog {
+    	   font: 15px arial, sans-serif;
+    	   border: 3px solid #73AD21;
+    	   padding: 10px;
+    	}
+    	#chatborder {
+    	  border-style: solid;
+    	  background-color: #ffe5cc;
+    	  border-width: 3px;
+    	  margin-top: 160px;
+    	  margin-bottom: 60px;
+    	  padding-top: 10px;
+    	  padding-bottom: 15px;
+    	  padding-right: 20px;
+    	  padding-left: 15px;
+    	  border-radius: 15px;
+    	}
+    	#chatbox {
+          box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+    	  font: 17px arial, sans-serif;
+    	  height: 22px;
+    	  width: 100%;
+          border:0;
+          padding:10px;
+          /*background:whitesmoke;*/
+    	}
+        #me {
+          box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+          font: 17px arial, sans-serif;
+          background-color: #FFFFFF;
+          text-align: right;
+          border:0;
+          padding:10px;
+          /*background:whitesmoke;*/
+        }
+
+        #bot{
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+            font: 17px arial, sans-serif;
+            background-color: #ffffcc;
+            text-align: left;
+            border:0;
+            padding:10px;
+        }
+
+        #b1{
+            margin-top: 10px;
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #008CBA;
+
+        }
+        #b2{
+            margin-top: 10px;
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #008CBA;
+            text-align: center;
+            width: 300px;
+            margin: auto;
+            display: none;
+
+        }
+        #b3{
+            margin-top: 10px;
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #008CBA;
+            text-align: center;
+            width: 300px;
+            margin: auto;
+            padding:10px;
+
+        }
+        #heading{
+            text-align: center;
+            margin: auto;
+            font-family: Tahoma, sans-serif;
+        
+}
+	</style>
+</head>
+
+	<body >
+        
+		<div id='chatborder' class = "center">
+            <div id="heading">
+                Cloud Computing
+            </div>
+			<div>
+				<textarea  id = "chat_log"  class = "center" readonly = "true" style="display:none"></textarea>
+			</div>
+			<br>
+			<div>
+				<input class = "center" id = "chatText" type="text" name="chat" onkeypress="onTestChange()" placeholder="Type a message">
+			</div>
+	    <button onclick="sendMsg()" type="button" id="b1"> Send </button>
+	   </div>
+       <div style="text-align:center;">
+            <!-- <input type="button" onclick="location.href='https://srishp.auth.us-east-1.amazoncognito.com/login?response_type=code&client_id=6kb08nalffsrufip433rq668b&redirect_uri=https://s3.amazonaws.com/chatcognito/chatAuth.html';" value="Sign in" id="b2"/> -->
+
+       </div>
+       <div style="text-align:center;">
+            <!-- <a href="logout.html" class="button" id = "b3">Logout</a> -->
+            <input type="button" onclick="location.href ='logout.html';" value="Logout" id="b3"/> 
+       </div>
+
+       <script type="text/javascript">
+        
+
+            let apigClient = {};
+            $(document).ready(function(){
+            console.log("In document ready function\n");
+            var messages = [];
+            var lastUserMessage = "";
+            var botMessage = "";
+            var botName = 'Chatbot';
+
+            var AWSconfig = {
+                "accessKey":"",
+                "secretKey":"",
+                "S3Bucket":"https://s3.amazonaws.com/restaurantrecommendationchatbot/chatAuth.html",
+                "region":"us-east-1",
+                "sessionToken":"",
+                "client_id" :"53kc0r5r1ohh7e41uvcaf0v98n",
+                "user_pool_id" : "us-east-1_dsVISksRW",
+                "cognito_domain_url":"https://diningchat.auth.us-east-1.amazoncognito.com",
+                "redirect_uri" : "https://s3.amazonaws.com/restaurantrecommendationchatbot/chatAuth.html",
+                "identity_pool_id":"us-east-1:360a7752-839f-46ba-9cbb-90d276a21520"
+            };
+
+
+            var getParameterByName = function(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            };
+
+            console.log("Code = "+getParameterByName("code"));
+
+            var exchangeAuthCodeForCredentials = function({auth_code = getParameterByName("code"),
+                                                            client_id = AWSconfig.client_id,
+                                                            identity_pool_id = AWSconfig.identity_pool_id,
+                                                            aws_region =AWSconfig.region,
+                                                            user_pool_id = AWSconfig.user_pool_id,
+                                                            cognito_domain_url= AWSconfig.cognito_domain_url,
+                                                            redirect_uri = AWSconfig.redirect_uri}) {
+                return new Promise((resolve, reject) => {
+                    var settings = {
+                        url: `${cognito_domain_url}/oauth2/token`,
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        data: {
+                            grant_type: 'authorization_code',
+                            client_id: client_id,
+                            redirect_uri: redirect_uri,
+                            code: auth_code
+                        }
+                    };
+
+                    $.ajax(settings).done(function (response) {
+                        console.log('OAuth2 Token Call Responded');
+                        console.log(response);
+                        if (response.id_token) {
+                            AWS.config.region = aws_region;
+                            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                                IdentityPoolId : identity_pool_id,
+                                Logins : {
+                                    [`cognito-idp.${aws_region}.amazonaws.com/${user_pool_id}`]: response.id_token
+                                }
+                            });
+
+                            console.log({IdentityPoolId : identity_pool_id,
+                                Logins : {
+                                    [`cognito-idp.${aws_region}.amazonaws.com/${user_pool_id}`]: response.id_token
+                                }
+                            });
+
+                            AWS.config.credentials.refresh(function (error) {
+                                console.log("Error",error);
+                                if (error) {
+                                    reject(error);
+                                } else {
+                                    console.log('Successfully Logged In');
+                                    resolve(AWS.config.credentials);
+                                }
+                            });
+                        } else {
+                            reject(response);
+                        }
+                    });
+                });
+            };
+
+            console.log("Calling for auth credentials exchange");
+
+            exchangeAuthCodeForCredentials({auth_code: getParameterByName("code"),
+                                            client_id: AWSconfig.client_id,
+                                            identity_pool_id: AWSconfig.identity_pool_id,
+                                            aws_region: AWSconfig.region,
+                                            user_pool_id: AWSconfig.user_pool_id,
+                                            cognito_domain_url: AWSconfig.cognito_domain_url,
+                                            redirect_uri: AWSconfig.redirect_uri})
+            .then(function(response) { 
+                console.log("Inside Then Function",response);
+                apigClient = apigClientFactory.newClient({
+                    accessKey: response.accessKeyId,
+                    secretKey: response.secretAccessKey,
+                    sessionToken: response.sessionToken,
+                    region: "us-east-1"
+                });
+            })
+            .catch(function(error) {
+                console.log("Got error ... ");
+                console.log("error = "+this.error);
+                console.log("response = "+this.response);
+            });
+
+            console.log("Surpassed exchange auth token");
+                
+            });
+
+        function getDateTime()
+        {
+            var date = new Date();
+            var dt = date.toLocaleTimeString();
+            return dt
+        };
+        function onTestChange() {
+            var key = window.event.keyCode;
+
+            // If the user has pressed enter
+            if (key === 13) {
+                sendMsg();
+            }
+            else {
+                return true;
+            }
+        };
+        //function to send the message to the server and get a response back and display it in the chat window
+        function sendMsg()
+        {
+            var msg = document.getElementById("chatText").value;
+            var msg1 = msg.charAt(0).toUpperCase() + msg.slice(1);
+            var textarea = document.getElementById('chat_log');
+            // var apigClient = apigClientFactory.newClient();
+// {apiKey:'Iwxi5NWAjZ6MM9fDFF6F17WTBRT8xKOC4JgIiXiz'  }
+            
+            // $("#chat_log").append(getDateTime() + " You: "+msg + "\n");
+            $("#chat_log").parent().append('<div id="me" >'+msg1 + ' <br>' + '<div style="font-size:10px;">' + getDateTime() + '</div>' + '</div>')
+            document.getElementById("chatText").value = "";
+            
+            var params = {
+                //This is where any header, path, or querystring request params go. The key is the parameter named as defined in the API
+            };
+            var body = {
+                //This is where you define the body of the request
+                "message": msg
+           
+            };
+            var additionalParams = {
+            }; 
+            apigClient.chatbotPost(params, body, additionalParams)
+                .then(function(result){
+                    console.log(result)
+                    //This is where you would put a success callback
+                    // $("#chat_log").append(getDateTime() + " BOT: " + result.data + "\n");
+                    // textarea.scrollTop = textarea.scrollHeight;
+                    var res = result.data;
+                    res= res.charAt(0).toUpperCase() + res.slice(1);
+                    $("#chat_log").parent().append('<div id = "bot">' +  result.data + '<div style="font-size:10px;">' + getDateTime() + '</div>' +'</div>')
+
+                    textarea.scrollTop = textarea.scrollHeight;
+
+
+                }).catch( function(result){
+                    console.log(result)
+                    alert(result.body)
+                    //This is where you would put an error callback
+            }); 
+        }
+
+        </script>
+
+
+	</body>
+</html>
